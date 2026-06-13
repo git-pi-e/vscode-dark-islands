@@ -106,18 +106,36 @@ fi
 mkdir -p "$SETTINGS_DIR"
 SETTINGS_FILE="$SETTINGS_DIR/settings.json"
 
-# Backup existing settings if they exist
+# Backup existing settings if they exist, then merge
 if [ -f "$SETTINGS_FILE" ]; then
     BACKUP_FILE="$SETTINGS_FILE.pre-islands-dark"
     cp "$SETTINGS_FILE" "$BACKUP_FILE"
     echo -e "${YELLOW}⚠️  Existing settings.json backed up to:${NC}"
     echo "   $BACKUP_FILE"
     echo "   You can restore your old settings from this file if needed."
-fi
 
-# Copy Islands Dark settings
-cp "$SCRIPT_DIR/settings.json" "$SETTINGS_FILE"
-echo -e "${GREEN}✓ Islands Dark settings applied${NC}"
+    if command -v jq &> /dev/null; then
+        # Merge: user's non-theme settings are preserved, Islands Dark theme keys win
+        # This ensures updated fixes are applied while keeping user customizations
+        if MERGED=$(jq -s '.[0] * .[1]' "$SETTINGS_FILE" "$SCRIPT_DIR/settings.json" 2>/dev/null); then
+            echo "$MERGED" > "$SETTINGS_FILE"
+            echo -e "${GREEN}✓ Settings merged (your non-theme settings preserved, theme settings updated)${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Could not parse existing settings.json - leaving it untouched${NC}"
+            echo "   Your backup is at: $BACKUP_FILE"
+            echo "   To apply Islands Dark settings, manually merge from: $SCRIPT_DIR/settings.json"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  jq not found - cannot merge settings safely${NC}"
+        echo "   Your backup is at: $BACKUP_FILE"
+        echo "   To apply Islands Dark settings, manually merge from: $SCRIPT_DIR/settings.json"
+        echo "   Or install jq (https://jqlang.github.io/jq/) and re-run this script"
+    fi
+else
+    # No existing settings - just copy
+    cp "$SCRIPT_DIR/settings.json" "$SETTINGS_FILE"
+    echo -e "${GREEN}✓ Islands Dark settings applied${NC}"
+fi
 
 echo ""
 echo "🚀 Step 5: Enabling Custom UI Style..."
