@@ -20,14 +20,28 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 SETTINGS_FILE="$SETTINGS_DIR/settings.json"
-BACKUP_FILE="$SETTINGS_FILE.pre-islands-dark"
+LEGACY_BACKUP_FILE="$SETTINGS_FILE.pre-islands-dark"
+BACKUP_FILE=""
 
-if [ -f "$BACKUP_FILE" ]; then
+if [ -d "$SETTINGS_DIR" ]; then
+    for candidate in "$SETTINGS_DIR"/settings.json.pre-islands-dark.*; do
+        if [ -f "$candidate" ]; then
+            BACKUP_FILE="$candidate"
+            break
+        fi
+    done
+fi
+
+if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
     cp "$BACKUP_FILE" "$SETTINGS_FILE"
     echo -e "${GREEN}✓ Settings restored from backup${NC}"
     echo "   Backup file: $BACKUP_FILE"
+elif [ -f "$LEGACY_BACKUP_FILE" ]; then
+    cp "$LEGACY_BACKUP_FILE" "$SETTINGS_FILE"
+    echo -e "${GREEN}✓ Settings restored from backup${NC}"
+    echo "   Backup file: $LEGACY_BACKUP_FILE"
 else
-    echo -e "${YELLOW}⚠️  No backup found at $BACKUP_FILE${NC}"
+    echo -e "${YELLOW}⚠️  No Antigravity settings backup found${NC}"
     echo "   You may need to manually update your Antigravity IDE settings."
 fi
 
@@ -80,7 +94,7 @@ try {
         console.log('PARSE_ERROR');
         process.exit(1);
     }
-    const islandsDarkIds = new Set(['bwya77.islands-dark', 'your-publisher-name.islands-dark']);
+    const islandsDarkIds = new Set(['bwya77.islands-dark']);
     const before = extensions.length;
     extensions = extensions.filter(e => !islandsDarkIds.has(e?.identifier?.id));
     if (extensions.length < before) {
