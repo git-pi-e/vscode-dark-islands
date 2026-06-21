@@ -62,6 +62,7 @@
         customCssObj = settingsJson."custom-ui-style.stylesheet" or {};
 
         # Convert the JSON object into a valid CSS string
+        # Filters out non-attrset entries (e.g. JSON comment keys like "// ─── end ───": "")
         toCss = obj:
           builtins.concatStringsSep "\n" (
             pkgs.lib.mapAttrsToList (selector: rules:
@@ -70,7 +71,7 @@
                 pkgs.lib.mapAttrsToList (prop: value: "  ${prop}: ${value};") rules
               ) +
               "\n}"
-            ) obj
+            ) (pkgs.lib.filterAttrs (_: v: builtins.isAttrs v) obj)
           );
 
         customCssString = toCss customCssObj;
